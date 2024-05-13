@@ -321,18 +321,21 @@ EOF
     }
 
     extract_from_json() {
-        video_link=$(printf "%s" "$json_data" | tr '[' '\n' | $sed -nE 's@.*\\\"file\\\":\\\"(.*\.m3u8).*@\1@p' | head -1)
-        [ -n "$quality" ] && video_link=$(printf "%s" "$video_link" | $sed -e "s|/playlist.m3u8|/$quality/index.m3u8|")
+        video_link=$(printf "%s" "$json_data" | tr ',' '\n' | grep -o '"source":"[^"]*' | cut -d'"' -f4)
+        [ -n "$quality" ] && video_link=$(printf "%s" "$video_link" | sed -e "s|/playlist.m3u8|/$quality/index.m3u8|")
 
         [ "$json_output" = "1" ] && printf "%s\n" "$json_data" && exit 0
-        subs_links=$(printf "%s" "$json_data" | tr "{}" "\n" | $sed -nE "s@.*\"file\":\"([^\"]*)\",\"label\":\"(.$subs_language)[,\"\ ].*@\1@p")
+        subs_links=$(printf "%s" "$json_data" | tr ',' '\n' | grep -o '"subtitle":"[^"]*' | cut -d'"' -f4 | grep "_$subs_language" | tr '\\' '/')
         subs_arg="--sub-file"
         num_subs=$(printf "%s" "$subs_links" | wc -l)
+        
         if [ "$num_subs" -gt 0 ]; then
-            subs_links=$(printf "%s" "$subs_links" | $sed -e "s/:/\\$path_thing:/g" -e "H;1h;\$!d;x;y/\n/$separator/" -e "s/$separator\$//")
+            subs_links=$(printf "%s" "$subs_links" | sed -e "s/:/\\$path_thing:/g" -e "H;1h;\$!d;x;y/\n/$separator/" -e "s/$separator\$//")
             [ "$num_subs" -gt 1 ] && subs_arg="--sub-files"
         fi
+        
         [ -z "$subs_links" ] && send_notification "No subtitles found"
+
     }
 
     get_json() {
@@ -341,7 +344,7 @@ EOF
         provider_link=$(printf "%s" "$parse_embed" | cut -f1)
         source_id=$(printf "%s" "$parse_embed" | cut -f3)
         embed_type=$(printf "%s" "$parse_embed" | cut -f2)
-        json_data=$(curl -s "https://api.fffapifree.cam/get-source?id=${source_id}")
+        json_data=$(curl -s -X POST https://rabbitthunder-ruddy.vercel.app/api/vidcloud -H 'Content-Type: application/json' -H 'Accept: application/json' -d "{\"id\": \"${source_id}\"}")
         [ -n "$json_data" ] && extract_from_json
     }
 
