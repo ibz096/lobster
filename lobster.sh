@@ -321,13 +321,19 @@ EOF
     }
 
     extract_from_json() {
-        video_link=$(printf "%s" "$json_data" | tr ',' '\n' | grep -o '"source":"[^"]*' | cut -d'"' -f4)
+        #video_link=$(printf "%s" "$json_data" | tr ',' '\n' | grep -o '"source":"[^"]*' | cut -d'"' -f4)
+        video_link=$(printf "%s" "$json_data" | tr ',' '\n' | grep -o "sources: 'https://[^']*" | grep -o "https://[^']*m3u8")
         [ -n "$quality" ] && video_link=$(printf "%s" "$video_link" | sed -e "s|/playlist.m3u8|/$quality/index.m3u8|")
 
         [ "$json_output" = "1" ] && printf "%s\n" "$json_data" && exit 0
-        subs_links=$(printf "%s" "$json_data" | tr ',' '\n' | grep -o '"subtitle":"[^"]*' | cut -d'"' -f4 | grep "_$subs_language" | tr '\\' '/')
+        #Possible Filter: | tr -d '\n'| grep -o "tracks: \[.*\]" | tr -d ' ' | grep -o \{.*\} | sed 's/\},\s*{/\},\n\{/g' | grep Italian | sed -n 's/.*file:\([^,}]*\).*/\1/p'
+        subs_links=$(printf "%s" "$json_data" | tr -d '\n'| grep -o "tracks: \[.*\]" | tr -d ' ' | grep -o \{.*\} | sed 's/\},\s*{/\},\n\{/g' | grep "$subs_language" | sed -n 's/.*file:\([^,}]*\).*/\1/p' | tr -d \') 
+
+        #| grep -o '"tracks":\ \[\{.*\}\]' | sed 's/"tracks"://') #| tr ',' '\n' | grep -o '"tracks":"[^"]*' | cut -d'"' -f4 | grep "_$subs_language" | tr '\\' '/')
         subs_arg="--sub-file"
-        num_subs=$(printf "%s" "$subs_links" | wc -l)
+        num_subs=$(printf "\n%s" "$subs_links" | tr ' ' '\n' | wc -l)
+        #exit
+
         
         if [ "$num_subs" -gt 0 ]; then
             subs_links=$(printf "%s" "$subs_links" | sed -e "s/:/\\$path_thing:/g" -e "H;1h;\$!d;x;y/\n/$separator/" -e "s/$separator\$//")
@@ -344,7 +350,8 @@ EOF
         provider_link=$(printf "%s" "$parse_embed" | cut -f1)
         source_id=$(printf "%s" "$parse_embed" | cut -f3)
         embed_type=$(printf "%s" "$parse_embed" | cut -f2)
-        json_data=$(curl -s -X POST https://rabbitthunder-ruddy.vercel.app/api/vidcloud -H 'Content-Type: application/json' -H 'Accept: application/json' -d "{\"id\": \"${source_id}\"}")
+        json_data=$(npx ts-node "$rabbit_wasm_path" "$source_id")
+        #json_data=$(curl -s -X POST https://rabbitthunder-ruddy.vercel.app/api/vidcloud -H 'Content-Type: application/json' -H 'Accept: application/json' -d "{\"id\": \"${source_id}\"}")
         [ -n "$json_data" ] && extract_from_json
     }
 
