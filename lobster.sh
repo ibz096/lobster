@@ -332,10 +332,9 @@ EOF
         #| grep -o '"tracks":\ \[\{.*\}\]' | sed 's/"tracks"://') #| tr ',' '\n' | grep -o '"tracks":"[^"]*' | cut -d'"' -f4 | grep "_$subs_language" | tr '\\' '/')
         subs_arg="--sub-file"
         num_subs=$(printf "\n%s" "$subs_links" | tr ' ' '\n' | wc -l)
-        #exit
 
         
-        if [ "$num_subs" -gt 0 ]; then
+        if [ "$num_subs" -gt 1 ]; then
             subs_links=$(printf "%s" "$subs_links" | sed -e "s/:/\\$path_thing:/g" -e "H;1h;\$!d;x;y/\n/$separator/" -e "s/$separator\$//")
             [ "$num_subs" -gt 1 ] && subs_arg="--sub-files"
         fi
