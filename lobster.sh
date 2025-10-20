@@ -59,6 +59,9 @@ case "$(uname -s)" in
     *arwin) sed="gsed" && ueberzugpp_tmp_dir="${TMPDIR:-/tmp}" ;;
 esac
 
+case "$(uname -rv)" in
+    *WSL*) separator=';' && path_thing='' ;;
+esac
 # Checks if any of the provided arguments are -e or --edit
 # If so, it will edit the config file
 # This was added for pure convenience (for me)
